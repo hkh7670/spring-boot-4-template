@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: spring-boot-4-template
+  profiles:
+    # 프로필을 지정하지 않고 실행하면 local로 동작
+    default: local
+  lifecycle:
+    # graceful shutdown 시 처리 중인 요청을 기다리는 최대 시간
+    timeout-per-shutdown-phase: 30s
+  jpa:
+    open-in-view: false
+    hibernate:
+      # 스키마는 DDL로 직접 관리한다. ddl-auto는 테스트(H2)에서만 사용.
+      ddl-auto: none
+
+server:
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+app:
+  log:
+    dir: ./logs
+    level: INFO
+    max-history: 30

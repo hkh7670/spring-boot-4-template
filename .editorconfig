@@ -1,0 +1,17 @@
+# EditorConfig 루트 설정 (상위 디렉토리 탐색 중지)
+root = true
+
+# 모든 파일에 대한 기본 설정
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Google Java Style 기반 (2칸 들여쓰기, 100자 제한). 단, 여러 줄 인자의 닫는 괄호는 단독 줄에 둔다.
+[*.java]
+indent_style = space
+indent_size = 2
+max_line_length = 100

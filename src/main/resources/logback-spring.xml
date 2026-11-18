@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="false">
+
+    <!--
+      환경별 값은 application.yml 에서 읽어옴 (<springProperty>).
+      로그 파일 2종 분리 (파일명에 server.port 포함 → nginx 포트 스위칭 무중단배포에서
+      블루/그린 두 컨테이너가 같은 로그 볼륨을 동시에 마운트해도 파일 충돌 없음):
+        - app_{port}.log   : INFO 이상 전체 (INFO/WARN/ERROR), 롤오버 시 .gz 압축
+        - error_{port}.log : ERROR 만, 롤오버 시 .gz 압축
+    -->
+
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <springProperty name="LOG_DIR" source="app.log.dir" defaultValue="./logs"/>
+    <springProperty name="LOG_LEVEL" source="app.log.level" defaultValue="INFO"/>
+    <springProperty name="LOG_HISTORY" source="app.log.max-history" defaultValue="30"/>
+    <springProperty name="SERVER_PORT" source="server.port" defaultValue="8080"/>
+
+    <!-- traceId: TraceIdFilter가 요청마다 MDC에 넣는 UUID. 요청 밖(기동/종료 등) 로그는 빈 값으로 찍힌다. -->
+    <property name="LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId:-}] %-5level %logger{36} - %msg%n"/>
+
+    <!-- ===== 콘솔 ===== -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- ===== 전체 로그 파일 (INFO 이상 전부) ===== -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/app_${SERVER_PORT}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/app_${SERVER_PORT}.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <maxHistory>${LOG_HISTORY}</maxHistory>
+            <totalSizeCap>3GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- ===== 에러 전용 파일 (ERROR 만) ===== -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/error_${SERVER_PORT}.log</file>
+        <!-- ERROR 레벨만 통과, 나머지(INFO/WARN 등)는 DENY -->
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/error_${SERVER_PORT}.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <maxHistory>${LOG_HISTORY}</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <root level="${LOG_LEVEL}">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
+    </root>
+
+</configuration>

@@ -1,0 +1,93 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.1.1'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.example.template'
+version = '0.0.1-SNAPSHOT'
+description = 'Spring Boot 4 + Java 25 base template'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    set('springCloudVersion', "2025.1.3")
+    // OpenFeign's actively-maintained Querydsl fork (io.github.openfeign.querydsl),
+    // not the original com.querydsl (largely unmaintained since 2023).
+    set('querydslVersion', "7.6")
+}
+
+def querydslGeneratedDir = layout.buildDirectory.dir("generated/querydsl")
+
+sourceSets {
+    main {
+        java {
+            srcDirs += querydslGeneratedDir
+        }
+    }
+}
+
+dependencies {
+    // Web
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+
+    // Actuator (/actuator/health)
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    // Persistence (JPA / DB)
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    runtimeOnly 'com.mysql:mysql-connector-j'
+    // H2: local 프로필과 테스트에서 사용 (ddl-auto로 스키마 자동 생성)
+    runtimeOnly 'com.h2database:h2'
+
+    // Validation
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // QueryDSL (OpenFeign-maintained fork, not the largely unmaintained com.querydsl)
+    implementation "io.github.openfeign.querydsl:querydsl-jpa:${querydslVersion}"
+    annotationProcessor "io.github.openfeign.querydsl:querydsl-apt:${querydslVersion}:jpa"
+    annotationProcessor 'jakarta.annotation:jakarta.annotation-api'
+
+    // OpenFeign
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
+    // API 문서화 (Swagger UI / OpenAPI 3)
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.2.0'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+
+    // Test
+    testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-validation-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.generatedSourceOutputDirectory.set(querydslGeneratedDir)
+    // Gradle의 javac는 기본적으로 파라미터 이름을 클래스 파일에 남기지 않아서,
+    // @PathVariable/@RequestParam에 이름을 명시하지 않으면 리플렉션 바인딩이 실패한다.
+    options.compilerArgs << '-parameters'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
