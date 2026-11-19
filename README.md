@@ -4,7 +4,7 @@ Spring Boot 4 + Java 25 기반 신규 프로젝트용 베이스 템플릿입니�
 
 ## 스택
 
-- Spring Boot 4.1.1
+- Spring Boot 4.1.2
 - Java 25 (Gradle Toolchain으로 고정)
 - Gradle 9.9.1 (Groovy DSL)
 - Spring Data JPA + MySQL (local/테스트는 H2 인메모리)
